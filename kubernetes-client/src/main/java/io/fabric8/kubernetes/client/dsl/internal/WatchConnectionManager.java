@@ -38,11 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -158,7 +160,12 @@ public class WatchConnectionManager<T, L extends KubernetesResourceList> impleme
             queue.add(new KubernetesClientException(status));
           }
         } else {
-          logger.error("Exec Failure", e);
+          if(forceClosed.get() && e instanceof InterruptedIOException) {
+            logger.info("Connection interrupted");
+            logger.debug("Exception received", e);
+          } else {
+            logger.error("Exec Failure", e);
+          }
           if (!started.get()) {
             queue.add(KubernetesClientException.launderThrowable(e));
           }
@@ -339,6 +346,19 @@ public class WatchConnectionManager<T, L extends KubernetesResourceList> impleme
       } catch (Throwable t) {
         throw KubernetesClientException.launderThrowable(t);
       }
+    }
+
+    // Cleaning up the client resources
+    try {
+      ExecutorService clientService = clonedClient.dispatcher().executorService();
+
+      clientService.shutdown();
+      if(!clientService.awaitTermination(5, TimeUnit.SECONDS)) {
+        clientService.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 }

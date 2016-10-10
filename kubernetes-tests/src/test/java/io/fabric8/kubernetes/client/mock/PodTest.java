@@ -30,11 +30,13 @@ import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import io.fabric8.kubernetes.server.mock.KubernetesServer;
 import io.fabric8.kubernetes.server.mock.OutputStreamMessage;
 import okhttp3.Response;
+
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -268,6 +270,64 @@ public class PodTest {
     });
 
     assertTrue(deleteLatch.await(10, TimeUnit.MINUTES));
+  }
+
+  @Test
+  public void testWatchShutdown() throws InterruptedException {
+    //We start with a list
+    Pod pod1 = new PodBuilder()
+      .withNewMetadata()
+      .withName("pod1")
+      .withResourceVersion("1")
+      .endMetadata()
+      .build();
+
+    server.expect().withPath("/api/v1/namespaces/test/pods").andReturn(200, new PodListBuilder()
+      .withNewMetadata()
+      .withResourceVersion("1")
+      .endMetadata()
+      .addToItems(pod1)
+      .build()
+    ).once();
+
+    server.expect().withPath("/api/v1/namespaces/test/pods?fieldSelector=metadata.name%3Dpod1&resourceVersion=1&watch=true")
+      .andUpgradeToWebSocket()
+      .open()
+      .waitFor(15000).andEmit(new WatchEvent(pod1, "DELETED"))
+      .done()
+      .always();
+
+    KubernetesClient client = server.getClient();
+
+    final CountDownLatch deleteLatch = new CountDownLatch(1);
+    Watch watch = client.pods().withName("pod1").watch(new Watcher<Pod>() {
+      @Override
+      public void eventReceived(Action action, Pod resource) {
+        switch (action) {
+        case DELETED:
+          deleteLatch.countDown();
+        }
+      }
+
+      @Override
+      public void onClose(KubernetesClientException cause) {
+
+      }
+    });
+
+    assertTrue(deleteLatch.await(10, TimeUnit.MINUTES));
+
+    watch.close();
+
+    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+    for(Thread t : threadSet) {
+      if(t.getName().startsWith("Ok") && !t.isDaemon()) {
+        // Join the Ok Http thread for some seconds
+        t.join(3000);
+        assertEquals(Thread.State.TERMINATED, t.getState());
+      }
+    }
+
   }
 
 
