@@ -83,15 +83,16 @@
     <generex.bundle.version>1.0.1_1</generex.bundle.version>
     <automaton.version>1.11-8</automaton.version>
     <automaton.bundle.version>1.11-8_1</automaton.bundle.version>
-    <jackson.version>2.7.7</jackson.version>
+    <jackson.version>2.8.11</jackson.version>
     <jackson.bundle.version>${jackson.version}</jackson.bundle.version>
     <junit.version>4.12</junit.version>
-    <kubernetes.model.version>2.0.9</kubernetes.model.version>
+    <kubernetes.model.version>2.0.10.fuse-730007</kubernetes.model.version>
     <log4j.version>2.10.0</log4j.version>
     <zjsonpatch.version>0.3.0</zjsonpatch.version>
     <arquillian.cube.version>1.15.2</arquillian.cube.version>
     <assertj.core.version>3.8.0</assertj.core.version>
     <arquillian.core.version>1.2.0.Final</arquillian.core.version>
+    <karaf.version>4.2.0.fuse-730010</karaf.version>
 
     <slf4j.version>1.7.13</slf4j.version>
     <snakeyaml.version>1.20</snakeyaml.version>
