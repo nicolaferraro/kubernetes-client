@@ -84,6 +84,7 @@
     <automaton.version>1.11-8</automaton.version>
     <automaton.bundle.version>1.11-8_1</automaton.bundle.version>
     <jackson.version>2.8.11</jackson.version>
+    <jackson.databind.version>2.8.11.2</jackson.databind.version>
     <jackson.bundle.version>${jackson.version}</jackson.bundle.version>
     <junit.version>4.12</junit.version>
     <kubernetes.model.version>2.0.10.fuse-730007</kubernetes.model.version>
